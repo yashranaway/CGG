@@ -35,3 +35,4 @@
 
 ## Animation
 24. Animation using Mid-point/Bresenham Circle and DDA/Bresenham Line Drawing Algorithms 
+![Animations](animations.png)
