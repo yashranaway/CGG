@@ -1,88 +1,131 @@
 #include <graphics.h>
-#include <dos.h>
 #include <conio.h>
+#include <dos.h>
 
-#define STEP_DELAY 15
-#define RADIUS 10
+// Draw circle using midpoint algorithm
+void drawCircle(int xc, int yc, int r) {
+    int x = 0, y = r, p = 1 - r;
 
-void drawBoundary() {
-    setcolor(WHITE);
-    rectangle(10, 10, 620, 470); // visible boundary
-}
+    while (x <= y) {
+        putpixel(xc + x, yc + y, WHITE);
+        putpixel(xc - x, yc + y, WHITE);
+        putpixel(xc + x, yc - y, WHITE);
+        putpixel(xc - x, yc - y, WHITE);
+        putpixel(xc + y, yc + x, WHITE);
+        putpixel(xc - y, yc + x, WHITE);
+        putpixel(xc + y, yc - x, WHITE);
+        putpixel(xc - y, yc - x, WHITE);
 
-void drawObstacles() {
-    setcolor(BLUE);
-    setlinestyle(SOLID_LINE, 0, 3);
-    line(300, 0, 300, 200);   // top middle wall
-    line(300, 250, 300, 480); // bottom middle wall
-}
-
-void drawBall(int x, int y) {
-    setcolor(BLUE);
-    setfillstyle(SOLID_FILL, BLUE);
-    circle(x, y, RADIUS);
-    floodfill(x, y, BLUE);
-}
-
-void clearBall(int x, int y) {
-    setcolor(BLACK);
-    setfillstyle(SOLID_FILL, BLACK);
-    circle(x, y, RADIUS + 1);
-    floodfill(x, y, BLACK);
-    
-    // Redraw boundary and obstacles after clearing to keep them visible
-    drawBoundary();
-    drawObstacles();
-}
-
-void moveBall(int &x, int &y, int dx, int dy, int steps) {
-    for (int i = 0; i < steps; i++) {
-        clearBall(x, y);
-        x += dx;
-        y += dy;
-        drawBall(x, y);
-        delay(STEP_DELAY);
+        x++;
+        if (p < 0) p += 2 * x + 1;
+        else {
+            y--;
+            p += 2 * (x - y) + 1;
+        }
     }
 }
 
-void main() {
+// Draw rectangle and two vertical lines in middle with a gap
+void drawPath(int left, int top, int right, int bottom, int midX, int midY) {
+    rectangle(left, top, right, bottom);
+
+    // Top-middle vertical line (top to midY - gap)
+    line(midX, top, midX, midY - 20);
+
+    // Bottom-middle vertical line (midY + gap to bottom)
+    line(midX, midY + 20, midX, bottom);
+}
+
+void animatePath() {
+    int left = 100, top = 100, right = 400, bottom = 300;
+    int midX = (left + right) / 2;
+    int midY = (top + bottom) / 2;
+    int r = 10;
+
+    while (!kbhit()) {
+        int x, y;
+
+        // 1. Bottom-left to top-left
+        for (y = bottom - r; y >= top + r && !kbhit(); y -= 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(left + r, y, r);
+            delay(10);
+        }
+
+        // 2. Top-left to top-middle
+        for (x = left + r; x <= midX - r && !kbhit(); x += 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(x, top + r, r);
+            delay(10);
+        }
+
+        // 3. Top-middle to mid-top (vertical down to gap)
+        for (y = top + r; y <= midY - 20 - r && !kbhit(); y += 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(midX, y, r);
+            delay(10);
+        }
+
+        // 4. Mid-top to right-middle (horizontal right)
+        for (x = midX + r; x <= right - r && !kbhit(); x += 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(x, midY, r);
+            delay(10);
+        }
+
+        // 5. Right-middle to bottom-right (vertical down)
+        for (y = midY + r; y <= bottom - r && !kbhit(); y += 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(right - r, y, r);
+            delay(10);
+        }
+
+        // 6. Bottom-right to bottom-middle (horizontal left)
+        for (x = right - r; x >= midX + r && !kbhit(); x -= 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(x, bottom - r, r);
+            delay(10);
+        }
+
+        // 7. Bottom-middle to mid-bottom (vertical up to gap)
+        for (y = bottom - r; y >= midY + 20 + r && !kbhit(); y -= 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(midX, y, r);
+            delay(10);
+        }
+
+        // 8. Mid-bottom to left-middle (horizontal left)
+        for (x = midX - r; x >= left + r && !kbhit(); x -= 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(x, midY, r);
+            delay(10);
+        }
+
+        // 9. Left-middle to bottom-left (vertical down)
+        for (y = midY + r; y <= bottom - r && !kbhit(); y += 2) {
+            cleardevice();
+            drawPath(left, top, right, bottom, midX, midY);
+            drawCircle(left + r, y, r);
+            delay(10);
+        }
+    }
+}
+
+int main() {
     int gd = DETECT, gm;
-    initgraph(&gd, &gm, "C:\\TURBOC3\\BGI");
-    
-    if (graphresult() != grOk) {
-        cprintf("Graphics initialization failed!\n");
-        getch();
-        return;
-    }
-    
-    setbkcolor(BLACK);
-    cleardevice();
-    
-    drawBoundary();
-    drawObstacles();
-    
-    int x = 30, y = 450; // Start point (bottom left inside, adjusted)
-    drawBall(x, y);
-    delay(500);
-    
-    // Movement path - Adjusted to stay within bounds (10,10 to 620,470)
-    moveBall(x, y, 5, 0, 40);   // right to x=230
-    moveBall(x, y, 0, -5, 30);  // up to y=300
-    moveBall(x, y, 5, 0, 20);   // right to x=330 (past wall)
-    moveBall(x, y, 0, 5, 30);   // down to y=450
-    moveBall(x, y, 5, 0, 40);   // right to x=530
-    moveBall(x, y, 0, -5, 80);  // up to y=50
-    moveBall(x, y, -5, 0, 100); // left to x=30
-    moveBall(x, y, 0, -5, 8);   // up to y=10 (stay within bound)
-    moveBall(x, y, 5, 0, 100);  // right to x=530
-    moveBall(x, y, 0, 5, 8);    // down to y=50
-    moveBall(x, y, -5, 0, 40);  // left to x=330
-    moveBall(x, y, 0, 5, 40);   // down to y=250 (under wall)
-    moveBall(x, y, -5, 0, 40);  // left to x=130
-    moveBall(x, y, 0, -5, 20);  // up to y=150
-    moveBall(x, y, -5, 0, 20);  // left to x=30
-    moveBall(x, y, 0, 5, 80);   // down to y=550 (but will stop at boundary)
-    
+    initgraph(&gd, &gm, "C:\\Turboc3\\BGI");
+
+    animatePath();
+
     getch();
     closegraph();
+    return 0;
 }
